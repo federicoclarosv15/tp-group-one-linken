@@ -46,28 +46,7 @@ linken/
 
 ## Decisiones de arquitectura
 
-### Monorepo
-Contratos y frontend viven en el mismo repositorio para simplificar el flujo:
-un solo `git clone`, referencias cruzadas claras entre el ABI del contrato
-y el frontend, y un único historial de cambios para la entrega.
-
-### OpenZeppelin v5
-Se eligió OZ v5 (última versión estable con soporte activo) porque:
-- Compatibilidad nativa con Solidity 0.8.24
-- `ERC20Pausable` usa `_update` en lugar del deprecado `_beforeTokenTransfer`
-- `Ownable` requiere pasar `initialOwner` explícitamente (más seguro que `msg.sender` implícito)
-- `ReentrancyGuard` mejorado con menor overhead de gas
-
-### Solidity 0.8.24
-- Overflow/underflow revertidos por defecto (sin `SafeMath`)
-- Custom errors disponibles
-- Última versión estable al momento del desarrollo
-
-### Stack frontend
-- **RainbowKit v2**: UI de conexión de wallet lista para usar, soporte multi-wallet
-- **wagmi v2**: hooks de React para leer/escribir en blockchain
-- **viem**: librería de bajo nivel para interactuar con EVM, reemplaza a ethers.js
-- **Next.js 14**: App Router, SSR compatible con wagmi v2
+Las decisiones de diseño están documentadas como ADRs en [`docs/`](./docs/).
 
 ---
 
