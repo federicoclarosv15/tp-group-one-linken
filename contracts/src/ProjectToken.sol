@@ -96,9 +96,9 @@ contract ProjectToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Ree
     }
 
     // Solo DEFAULT_ADMIN_ROLE puede conectar el distributor
-    function setDistributor(address _distributor) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_distributor != address(0), "PT: zero distributor");
-        dividendDistributor = IDividendDistributor(_distributor);
-        emit DistributorSet(_distributor);
+    function setDistributor(address newDistributor) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newDistributor != address(0), "PT: zero distributor");
+        dividendDistributor = IDividendDistributor(newDistributor);
+        emit DistributorSet(newDistributor);
     }
 }

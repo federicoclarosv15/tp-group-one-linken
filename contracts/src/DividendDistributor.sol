@@ -7,6 +7,7 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ProjectToken} from "./ProjectToken.sol";
+import "./interfaces/IDividendDistributor.sol";
 
 /**
  * @title DividendDistributor
@@ -20,7 +21,7 @@ import {ProjectToken} from "./ProjectToken.sol";
  * Patron pull: cada holder retira sus dividendos cuando quiere.
  * La plataforma nunca itera sobre holders (no hay loops).
  */
-contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard {
+contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDividendDistributor {
     using SafeERC20 for IERC20;
 
     bytes32 public constant DEPOSITOR_ROLE = keccak256("DEPOSITOR_ROLE");
