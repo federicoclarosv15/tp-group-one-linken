@@ -11,15 +11,14 @@ no_match_path = "test/legacy/**"
 [fuzz]
 runs = 500
 
-# Coverage
-[profile.coverage]
-via_ir = true
-
 # Invariant
 [invariant]
 runs   = 256
 depth  = 15
 
-# Formatter — excluir dependencias
-#[fmt]
-#exclude = ["lib/**"]
+[profile.default.coverage]
+exclude = [
+    "script/**",
+    "test/**",
+    "src/legacy/**"
+]

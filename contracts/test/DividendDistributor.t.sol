@@ -207,4 +207,57 @@ contract DividendDistributorTest is Test {
             assertGe(alicePending, bobPending);
         }
     }
+
+    // ── Stress mods and reqs ─────────────────────────────────────────
+
+    // Reverts del constructor
+    function test_DistributorConstructor_RevertIf_ZeroAddress() public {
+        vm.startPrank(platform);
+        vm.expectRevert("DD: zero token");
+        new DividendDistributor(address(0), address(usdc), platform);
+
+        vm.expectRevert("DD: zero usdc");
+        new DividendDistributor(address(token), address(0), platform);
+
+        vm.expectRevert("DD: zero admin");
+        new DividendDistributor(address(token), address(usdc), address(0));
+        vm.stopPrank();
+    }
+
+    // Revert de deposito con monto cero
+    function test_DepositDividends_RevertIf_AmountZero() public {
+        vm.startPrank(platform);
+        vm.expectRevert("DD: amount = 0");
+        distributor.depositDividends(0);
+        vm.stopPrank();
+    }
+
+    // Revert de deposito cuando no hay tokens circulando (supply = 0)
+    function test_DepositDividends_RevertIf_NoSupply() public {
+        // Desplegamos un token vacio con initialSupply = 0
+        vm.startPrank(platform);
+        ProjectToken emptyToken = new ProjectToken("Empty", "EMP", 0, 1000e18, platform, platform);
+        DividendDistributor newDistributor = new DividendDistributor(address(emptyToken), address(usdc), platform);
+
+        usdc.mint(platform, 100 * 1e6);
+        usdc.approve(address(newDistributor), 100 * 1e6);
+
+        vm.expectRevert("DD: no token supply");
+        newDistributor.depositDividends(100 * 1e6);
+        vm.stopPrank();
+    }
+
+    // Revert de reclamo cuando no hay balance acumulado pendiente
+    function test_ClaimDividends_RevertIf_NothingToClaim() public {
+        vm.prank(alice); // Alice no tiene tokens ni hay depositos
+        vm.expectRevert("DD: nothing to claim");
+        distributor.claimDividends();
+    }
+
+    // Asegurar que onTokenTransfer solo sea ejecutable por el contrato del Token
+    function test_OnTokenTransfer_RevertIf_NotProjectToken() public {
+        vm.prank(alice); // Intento de llamada externa maliciosa
+        vm.expectRevert("DD: not project token");
+        distributor.onTokenTransfer(alice, bob, 100e18);
+    }
 }
