@@ -2,16 +2,22 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {ProjectFactory}      from "../src/ProjectFactory.sol";
+import {ProjectFactory} from "../src/ProjectFactory.sol";
 import {DividendDistributor} from "../src/DividendDistributor.sol";
-import {ProjectToken}        from "../src/ProjectToken.sol";
+import {ProjectToken} from "../src/ProjectToken.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @dev Mock USDC solo para Anvil — no usar en Sepolia.
 contract MockUSDC is ERC20 {
     constructor() ERC20("USD Coin", "USDC") {}
-    function mint(address to, uint256 amount) external { _mint(to, amount); }
-    function decimals() public pure override returns (uint8) { return 6; }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+
+    function decimals() public pure override returns (uint8) {
+        return 6;
+    }
 }
 
 contract DeployAll is Script {
@@ -31,13 +37,14 @@ contract DeployAll is Script {
 
         // 3. Proyecto de ejemplo: Campo Solar Mendoza
         (uint256 id1, address csm) = factory.createProject(
-            "Campo Solar Mendoza", "CSM",
-            500_000 * 1e18,   // initial supply
+            "Campo Solar Mendoza",
+            "CSM",
+            500_000 * 1e18, // initial supply
             1_000_000 * 1e18, // max supply
             deployer
         );
-		console.log("CSM ProjectToken:", csm);
-		console.log("CSM Project ID:  ", id1);
+        console.log("CSM ProjectToken:", csm);
+        console.log("CSM Project ID:  ", id1);
 
         // 4. DividendDistributor para CSM
         DividendDistributor dist = new DividendDistributor(csm, address(usdc), deployer);
@@ -53,14 +60,9 @@ contract DeployAll is Script {
         console.log("Dividendos depositados: 10.000 USDC");
 
         // 7. Segundo proyecto sin distributor (etapa funding)
-        (, address eop) = factory.createProject(
-            "Eolico Patagonia", "EOP",
-            0,
-            500_000 * 1e18,
-            deployer
-        );
-		console.log("EOP ProjectToken:", eop);
-		console.log("EOP: funding stage, sin distributor");
+        (, address eop) = factory.createProject("Eolico Patagonia", "EOP", 0, 500_000 * 1e18, deployer);
+        console.log("EOP ProjectToken:", eop);
+        console.log("EOP: funding stage, sin distributor");
 
         vm.stopBroadcast();
 
@@ -68,7 +70,7 @@ contract DeployAll is Script {
         console.log("=== COPIAR A frontend/.env.local ===");
         console.log("NEXT_PUBLIC_USE_ANVIL=true");
         console.log("NEXT_PUBLIC_FACTORY_ADDRESS=", address(factory));
-        console.log("NEXT_PUBLIC_USDC_ADDRESS=",    address(usdc));
+        console.log("NEXT_PUBLIC_USDC_ADDRESS=", address(usdc));
         console.log("====================================");
     }
 }

@@ -16,9 +16,9 @@ runs = 500
 runs   = 256
 depth  = 15
 
-[profile.default.coverage]
-exclude = [
-    "script/**",
-    "test/**",
-    "src/legacy/**"
-]
+#[profile.default.coverage] (esto no existe como tal, buscar equivalente)
+#exclude = [
+#    "script/**",
+#    "test/**",
+#    "src/legacy/**"
+#]
