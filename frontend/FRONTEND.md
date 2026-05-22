@@ -50,7 +50,7 @@ La primera cuenta (`Account 0`) es el deployer por defecto.
 
 ```bash
 # Desde la carpeta contracts/
-forge script script/DeployAll.s.sol \
+forge script script/DeployAll.s.sol:DeployAll \
   --rpc-url http://127.0.0.1:8545 \
   --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
   --broadcast
@@ -109,3 +109,15 @@ npm start
 | `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID` | ID de WalletConnect (https://cloud.walletconnect.com) |
 | `NEXT_PUBLIC_FACTORY_ADDRESS` | Address del contrato ProjectFactory |
 | `NEXT_PUBLIC_USDC_ADDRESS` | Address del USDC (mock en Anvil, Circle en Sepolia) |
+
+## Dependencias y vulnerabilidades conocidas
+
+El stack RainbowKit v2 + wagmi v2 tiene vulnerabilidades en dependencias
+transitivas (WalletConnect, MetaMask SDK) reportadas por `npm audit`.
+Estas no son explotables en desarrollo local con Anvil.
+
+Para producción en Sepolia, evaluar migración a:
+- Next.js 15+
+- wagmi v3 + RainbowKit compatible
+
+Correr `npm audit` antes de cualquier deploy público para revisar el estado.

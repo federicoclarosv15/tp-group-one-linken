@@ -36,7 +36,8 @@ contract DeployAll is Script {
             1_000_000 * 1e18, // max supply
             deployer
         );
-        console.log("CSM ProjectToken:", csm, "(id:", id1, ")");
+		console.log("CSM ProjectToken:", csm);
+		console.log("CSM Project ID:  ", id1);
 
         // 4. DividendDistributor para CSM
         DividendDistributor dist = new DividendDistributor(csm, address(usdc), deployer);
@@ -58,7 +59,8 @@ contract DeployAll is Script {
             500_000 * 1e18,
             deployer
         );
-        console.log("EOP ProjectToken:", eop, "(funding stage, sin distributor)");
+		console.log("EOP ProjectToken:", eop);
+		console.log("EOP: funding stage, sin distributor");
 
         vm.stopBroadcast();
 
