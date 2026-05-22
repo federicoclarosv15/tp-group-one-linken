@@ -1,10 +1,11 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit";
-import { sepolia } from "wagmi/chains";
+import { sepolia, anvil } from "wagmi/chains";
+
+const isLocal = process.env.NEXT_PUBLIC_USE_ANVIL === "true";
 
 export const config = getDefaultConfig({
-  appName: "Linken LKN",
-  // Reemplazar con tu WalletConnect Project ID (https://cloud.walletconnect.com)
+  appName: "Linken Energy Platform",
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ?? "YOUR_PROJECT_ID",
-  chains: [sepolia],
+  chains: isLocal ? [anvil] : [sepolia],
   ssr: true,
 });

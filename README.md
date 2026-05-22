@@ -13,6 +13,7 @@ Monorepo con contrato ERC-20 auditado + frontend mínimo para interactuar desde 
 5. [Tests y coverage](#tests-y-coverage)
 6. [Análisis estático con Slither](#análisis-estático-con-slither)
 7. [Setup — Frontend](#setup--frontend)
+    - [Mas info](#mas-info)
 8. [Variables de entorno](#variables-de-entorno)
 9. [Checklist de seguridad](#checklist-de-seguridad)
 10. [Deploy oficial (leer antes de ejecutar)](#deploy-oficial-leer-antes-de-ejecutar)
@@ -210,6 +211,9 @@ cp .env.example .env.local
 npm run dev
 # Abrir http://localhost:3000
 ```
+### Mas info
+
+Para mas información sobre el front-end hacer click [`ACA`](./frontend/FRONTEND.md)
 
 ### Obtener WalletConnect Project ID
 
