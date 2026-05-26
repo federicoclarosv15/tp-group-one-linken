@@ -20,30 +20,31 @@ pragma solidity ^0.8.24;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20Pausable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IDividendDistributor} from "./interfaces/IDividendDistributor.sol";
 
-contract Linken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyGuard {
-    /// @notice Supply inicial acreditado al deployer.
-    uint256 public constant INITIAL_SUPPLY = 10_000 * 10 ** 18;
+contract LinkenToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, ReentrancyGuard {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
-    /// @notice Cap máximo de supply para evitar mint ilimitado.
-    uint256 public constant MAX_SUPPLY = 1_000_000 * 10 ** 18;
+    IDividendDistributor public dividendDistributor;
 
     // =========================================================
     // Eventos
     // =========================================================
-
     event Minted(address indexed to, uint256 amount);
     event Burned(address indexed from, uint256 amount);
+    event DistributorSet(address indexed distributor);
 
     // =========================================================
     // Constructor
     // =========================================================
-
-    constructor(address initialOwner) ERC20("LINKEN", "LKN") Ownable(initialOwner) {
-        // CEI: no hay checks externos; efecto directo sobre el estado.
-        _mint(initialOwner, INITIAL_SUPPLY);
+    constructor(address platformAdmin) ERC20("Linken", "LKN") {
+        require(platformAdmin != address(0), "LKN: zero admin");
+        _grantRole(DEFAULT_ADMIN_ROLE, platformAdmin);
+        _grantRole(MINTER_ROLE, platformAdmin);
+        _grantRole(PAUSER_ROLE, platformAdmin);
     }
 
     // =========================================================
@@ -54,30 +55,24 @@ contract Linken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyGuard
      * @notice Mintea `amount` tokens a `to`.
      * @dev ReentrancyGuard + CEI: checks → effects (_mint) → no interactions externas.
      */
-    function mint(address to, uint256 amount) external onlyOwner nonReentrant whenNotPaused {
-        // Checks
-        require(to != address(0), "LKN: mint to zero address");
-        require(amount > 0, "LKN: amount must be > 0");
-        require(totalSupply() + amount <= MAX_SUPPLY, "LKN: cap exceeded");
-
-        // Effects
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant whenNotPaused {
+        require(to != address(0), "LKN: mint to zero");
+        require(amount > 0, "LKN: amount = 0");
         _mint(to, amount);
-
-        // (no interactions externas)
         emit Minted(to, amount);
     }
 
     /**
      * @notice Pausa todas las transferencias (circuit-breaker).
      */
-    function pause() external onlyOwner {
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
     /**
      * @notice Reanuda las transferencias.
      */
-    function unpause() external onlyOwner {
+    function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
@@ -109,11 +104,18 @@ contract Linken is ERC20, ERC20Burnable, ERC20Pausable, Ownable, ReentrancyGuard
         emit Burned(account, amount);
     }
 
-    // =========================================================
-    // Overrides requeridos por Solidity (herencia múltiple)
-    // =========================================================
+    function setDistributor(address newDistributor) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(newDistributor != address(0), "LKN: zero distributor");
+        dividendDistributor = IDividendDistributor(newDistributor);
+        emit DistributorSet(newDistributor);
+    }
 
     function _update(address from, address to, uint256 value) internal virtual override(ERC20, ERC20Pausable) {
         super._update(from, to, value);
+        if (from != address(0) && to != address(0)) {
+            if (address(dividendDistributor) != address(0)) {
+                dividendDistributor.onTokenTransfer(from, to, value);
+            }
+        }
     }
 }

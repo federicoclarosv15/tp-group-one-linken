@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {DividendDistributor} from "../src/DividendDistributor.sol";
-import {ProjectToken} from "../src/ProjectToken.sol";
+import {LinkenToken} from "../src/LinkenToken.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 // Mock USDC — 6 decimales como el real
@@ -16,6 +16,7 @@ contract MockUSDC is ERC20 {
         _mint(to, amount);
     }
 
+    // El token real en Ethereum/Polygon tiene 6 decimales
     function decimals() public pure override returns (uint8) {
         return 6;
     }
@@ -23,7 +24,7 @@ contract MockUSDC is ERC20 {
 
 contract DividendDistributorTest is Test {
     DividendDistributor distributor;
-    ProjectToken token;
+    LinkenToken token;
     MockUSDC usdc;
 
     address platform = makeAddr("platform");
@@ -34,18 +35,26 @@ contract DividendDistributorTest is Test {
     uint256 constant SUPPLY = 1_000_000 * 1e18;
 
     function setUp() public {
-        // Deploy token
+        // Desplegar LinkenToken adaptado al nuevo constructor (solo el admin de la plataforma)
         vm.prank(platform);
-        token = new ProjectToken("Campo Solar Mendoza", "CSM", SUPPLY, SUPPLY, platform, platform);
+        token = new LinkenToken(platform);
 
-        // Deploy USDC mock
+        // Desplegar USDC mock.
         usdc = new MockUSDC();
 
-        // Deploy distributor
+        // Desplegar distributor vinculando la dirección valida de usdc
         vm.prank(platform);
         distributor = new DividendDistributor(address(token), address(usdc), platform);
 
-        // Darle USDC a la plataforma para depositar
+        // Vincular el distribuidor al token
+        vm.prank(platform);
+        token.setDistributor(address(distributor));
+
+        // Emitir el supply inicial a la plataforma
+        vm.prank(platform);
+        token.mint(platform, SUPPLY);
+
+        // Fondear la plataforma con USDC y darle el approve al distribuidor
         usdc.mint(platform, 100_000 * 1e6);
 
         vm.prank(platform);
@@ -73,8 +82,9 @@ contract DividendDistributorTest is Test {
         distributor.depositDividends(0);
     }
 
+    // Se actualizó para reflejar la función de quema pública de LinkenToken
     function test_DepositWithZeroSupplyReverts() public {
-        // El supply esta en platform, no en circulacion con holders
+        // El supply está en platform, no en circulación con holders
         // Quemamos todo para simular supply = 0
         vm.startPrank(platform);
         token.burn(SUPPLY);
@@ -201,8 +211,7 @@ contract DividendDistributorTest is Test {
 
         // La suma no supera lo depositado (puede haber 1-2 wei de redondeo)
         assertLe(alicePending + bobPending, 1_000 * 1e6 + 2);
-
-        // Alice siempre obtiene mas si tiene mas tokens
+        // Alice siempre obtiene más si tiene más tokens
         if (aliceShare > bobShare) {
             assertGe(alicePending, bobPending);
         }
@@ -210,7 +219,6 @@ contract DividendDistributorTest is Test {
 
     // ── Stress mods and reqs ─────────────────────────────────────────
 
-    // Reverts del constructor
     function test_DistributorConstructor_RevertIf_ZeroAddress() public {
         vm.startPrank(platform);
         vm.expectRevert("DD: zero token");
@@ -224,7 +232,6 @@ contract DividendDistributorTest is Test {
         vm.stopPrank();
     }
 
-    // Revert de deposito con monto cero
     function test_DepositDividends_RevertIf_AmountZero() public {
         vm.startPrank(platform);
         vm.expectRevert("DD: amount = 0");
@@ -232,11 +239,10 @@ contract DividendDistributorTest is Test {
         vm.stopPrank();
     }
 
-    // Revert de deposito cuando no hay tokens circulando (supply = 0)
+    // Revert corregido: Crea un LinkenToken con total supply en cero y valida la reversión
     function test_DepositDividends_RevertIf_NoSupply() public {
-        // Desplegamos un token vacio con initialSupply = 0
         vm.startPrank(platform);
-        ProjectToken emptyToken = new ProjectToken("Empty", "EMP", 0, 1000e18, platform, platform);
+        LinkenToken emptyToken = new LinkenToken(platform);
         DividendDistributor newDistributor = new DividendDistributor(address(emptyToken), address(usdc), platform);
 
         usdc.mint(platform, 100 * 1e6);
@@ -247,16 +253,16 @@ contract DividendDistributorTest is Test {
         vm.stopPrank();
     }
 
-    // Revert de reclamo cuando no hay balance acumulado pendiente
     function test_ClaimDividends_RevertIf_NothingToClaim() public {
-        vm.prank(alice); // Alice no tiene tokens ni hay depositos
+        vm.prank(alice);
+        // Alice no tiene tokens ni hay depósitos
         vm.expectRevert("DD: nothing to claim");
         distributor.claimDividends();
     }
 
-    // Asegurar que onTokenTransfer solo sea ejecutable por el contrato del Token
     function test_OnTokenTransfer_RevertIf_NotProjectToken() public {
-        vm.prank(alice); // Intento de llamada externa maliciosa
+        vm.prank(alice);
+        // Intento de llamada externa maliciosa
         vm.expectRevert("DD: not project token");
         distributor.onTokenTransfer(alice, bob, 100e18);
     }

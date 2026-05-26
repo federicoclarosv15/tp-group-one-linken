@@ -6,13 +6,13 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {ProjectToken} from "./ProjectToken.sol";
+import {LinkenToken} from "./LinkenToken.sol";
 import "./interfaces/IDividendDistributor.sol";
 
 /**
  * @title DividendDistributor
  * @notice Recibe ingresos en USDC y los distribuye proporcionalmente
- *         entre los holders de un ProjectToken.
+ *         entre los holders de un LinkenToken.
  *
  * Algoritmo "dividends per share":
  *   magnifiedDPShare += (amount * MAGNITUDE) / totalSupply
@@ -29,7 +29,7 @@ contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDivid
     // Precision para evitar perdida por division entera
     uint256 private constant MAGNITUDE = 2 ** 128;
 
-    ProjectToken public immutable projectToken;
+    LinkenToken public immutable token;
     IERC20 public immutable usdc;
 
     // Dividendos acumulados por token (escalados por MAGNITUDE)
@@ -53,12 +53,12 @@ contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDivid
     event DividendsWithdrawn(address indexed holder, uint256 amount);
 
     // ── Constructor ──────────────────────────────────────────
-    constructor(address _projectToken, address _usdc, address platformAdmin) {
-        require(_projectToken != address(0), "DD: zero token");
+    constructor(address _linkenToken, address _usdc, address platformAdmin) {
+        require(_linkenToken != address(0), "DD: zero token");
         require(_usdc != address(0), "DD: zero usdc");
         require(platformAdmin != address(0), "DD: zero admin");
 
-        projectToken = ProjectToken(_projectToken);
+        token = LinkenToken(_linkenToken);
         usdc = IERC20(_usdc);
 
         _grantRole(DEFAULT_ADMIN_ROLE, platformAdmin);
@@ -75,7 +75,7 @@ contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDivid
     function depositDividends(uint256 amount) external onlyRole(DEPOSITOR_ROLE) nonReentrant whenNotPaused {
         // Checks
         require(amount > 0, "DD: amount = 0");
-        uint256 supply = projectToken.totalSupply();
+        uint256 supply = token.totalSupply();
         require(supply > 0, "DD: no token supply");
 
         // Effects
@@ -108,15 +108,15 @@ contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDivid
         emit DividendsWithdrawn(msg.sender, pending);
     }
 
-    // ── Hooks — llamar desde ProjectToken al transferir ──────
+    // ── Hooks — llamar desde LinkenToken al transferir ──────
 
     /**
      * @notice Ajusta las correcciones cuando un holder transfiere tokens.
-     * @dev Debe ser llamado por ProjectToken en _update (from != 0 && to != 0).
-     *      Solo puede ser llamado por el ProjectToken asociado.
+     * @dev Debe ser llamado por LinkenToken en _update (from != 0 && to != 0).
+     *      Solo puede ser llamado por el LinkenToken asociado.
      */
     function onTokenTransfer(address from, address to, uint256 amount) external {
-        require(msg.sender == address(projectToken), "DD: not project token");
+        require(msg.sender == address(token), "DD: not project token");
 
         int256 delta = int256(magnifiedDividendPerShare * amount);
         magnifiedDividendCorrections[from] += delta;
@@ -145,7 +145,7 @@ contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDivid
     // ── Internals ────────────────────────────────────────────
 
     function _cumulativeDividends(address holder) private view returns (uint256) {
-        uint256 balance = projectToken.balanceOf(holder);
+        uint256 balance = token.balanceOf(holder);
         int256 raw = int256(magnifiedDividendPerShare * balance) + magnifiedDividendCorrections[holder];
         if (raw <= 0) return 0;
         return uint256(raw) / MAGNITUDE;
