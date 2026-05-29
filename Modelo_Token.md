@@ -506,34 +506,37 @@ Objetivo: entender qué falta entre el PoC y un parque tokenizado operando con p
 | Certificación de carbono $GREEN | Para que el certificado tenga valor real | Gold Standard o Verra VCS. Proceso de certificación 6-12 meses, costo USD 30-80k. |
 
 ### 11.3 — Oráculos y auditorías
-|Componente 	Para qué 	Proveedor / costo estimado
-Medidor IoT certificado 	Hardware en el parque 	Schneider / Itron / Landis+Gyr → USD 2.000 – 8.000 por punto de medición
-Chainlink Functions 	Backend que conecta el medidor con el contrato 	Setup técnico ~USD 5.000 + USD 100-500/mes en LINK
-Redundancia de oráculos 	3 nodos independientes cruzan datos 	USD 1.500 – 3.000/mes (3 nodos × ~USD 500-1.000)
-Auditoría smart contracts 	CertiK / Trail of Bits / OpenZeppelin 	USD 30.000 – 80.000 (oráculos suman complejidad)
-Auditoría energética anual 	TÜV / Bureau Veritas 	USD 8.000 – 20.000
-Certificación Gold Standard 	Para $GREEN como carbono real 	USD 30.000 – 80.000 (single project)
-Bug bounty 	Immunefi 	Pool USD 50k – 500k
-11.4 — Costos estimados (USD) para arrancar el primer parque en producción
-Concepto 	Costo único 	Costo mensual
-Smart contract audit 	USD 40.000 – 80.000 	—
-Asesoramiento legal (crypto + energía + financiero) 	USD 25.000 – 50.000 	USD 3.000 – 6.000
-Constitución SPE + PPA con CAMMESA 	USD 10.000 – 30.000 	USD 1.500 – 4.000
-Inscripción CNV PFC 	USD 5.000 – 20.000 	USD 500 – 2.000
-Habilitación ENRE / régimen MATER 	USD 5.000 – 15.000 	—
-Medidor IoT certificado 	USD 2.000 – 8.000 	—
-Chainlink Functions setup + nodes redundantes 	USD 5.000 – 10.000 	USD 1.500 – 3.500
-Auditoría energética anual 	— 	USD 700 – 1.700 (prorrateado)
-Certificación Gold Standard ($GREEN) 	USD 30.000 – 80.000 	USD 1.000 – 3.000 (verificación)
-KYC/AML provider 	USD 1.000 setup 	USD 2 – 5 por inversor
-Multi-sig Safe 	USD 10 (gas) 	—
-The Graph subgraph 	— 	USD 200 – 800
-Tenderly + Alchemy + Vercel 	USD 200 setup 	USD 400 – 1.200
-Bug bounty pool 	USD 50.000 – 500.000 (escrow) 	—
-Gas de deploy + operación 	USD 1.000 – 3.000 	USD 200 – 800
-TOTAL ESTIMADO 	USD 125.000 – 305.000 	USD 9.000 – 23.000
+|Componente | Para qué | Proveedor / costo estimado |
+|-----------|----------|----------------------------|
+| Medidor IoT certificado | Hardware en el parque | Schneider / Itron / Landis+Gyr → USD 2.000 – 8.000 por punto de medición |
+| Chainlink Functions | Backend que conecta el medidor con el contrato | Setup técnico ~USD 5.000 + USD 100-500/mes en LINK |
+| Redundancia de oráculos | 3 nodos independientes cruzan datos | USD 1.500 – 3.000/mes (3 nodos × ~USD 500-1.000) |
+| Auditoría smart contracts | CertiK / Trail of Bits / OpenZeppelin | USD 30.000 – 80.000 (oráculos suman complejidad) |
+| Auditoría energética anual | TÜV / Bureau Veritas | USD 8.000 – 20.000 |
+| Certificación Gold Standard | Para $GREEN como carbono real | USD 30.000 – 80.000 (single project) |
+| Bug bounty | Immunefi | Pool USD 50k – 500k |
 
-### Consideración crítica (cierre)
+### 11.4 — Costos estimados (USD) para arrancar el primer parque en producción
+| Concepto | Costo único | Costo mensual |
+|----------|-------------|---------------|
+| Smart contract audit | USD 40.000 – 80.000 | — |
+| Asesoramiento legal (crypto + energía + financiero) | USD 25.000 – 50.000 | USD 3.000 – 6.000 |
+| Constitución SPE + PPA con CAMMESA | USD 10.000 – 30.000 | USD 1.500 – 4.000 |
+| Inscripción CNV PFC | USD 5.000 – 20.000 | USD 500 – 2.000 |
+| Habilitación ENRE / régimen MATER | USD 5.000 – 15.000 | — |
+| Medidor IoT certificado | USD 2.000 – 8.000 | — |
+| Chainlink Functions setup + nodes redundantes | USD 5.000 – 10.000 | USD 1.500 – 3.500 |
+| Auditoría energética anual | — | USD 700 – 1.700 (prorrateado) |
+| Certificación Gold Standard ($GREEN) | USD 30.000 – 80.000 | USD 1.000 – 3.000 (verificación) |
+| KYC/AML provider | USD 1.000 setup | USD 2 – 5 por inversor |
+| Multi-sig Safe | USD 10 (gas) | — |
+| The Graph subgraph | —  |USD 200 – 800 |
+| Tenderly + Alchemy + Vercel | USD 200 setup | USD 400 – 1.200 |
+| Bug bounty pool | USD 50.000 – 500.000 (escrow) | — |
+| Gas de deploy + operación | USD 1.000 – 3.000 | USD 200 – 800 |
+| TOTAL ESTIMADO | USD 125.000 – 305.000 | USD 9.000 – 23.000 |
+
+## Consideración crítica (cierre)
 
 El proyecto es más caro de producir que resto de la materia porque agrega el costo de oráculos certificados + auditoría energética + certificación de carbono. Pero también es el más defensible ante regulación y ante inversores institucionales, justamente por la verificabilidad. Vale la pena solo si proyectás USD 300-500k de fees el primer año (que es realista con un parque de 5MW operando).
 
