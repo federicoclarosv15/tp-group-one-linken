@@ -36,30 +36,20 @@ contract DividendDistributorTest is Test {
     uint256 constant SUPPLY = 1_000_000 * 1e18;
 
     function setUp() public {
-        // Desplegar LinkenToken adaptado al nuevo constructor (solo el admin de la plataforma)
+        // 1. Inicializar el token del proyecto
         vm.prank(platform);
-        token = new LinkenToken(platform);
+        token = new LinkenToken(platform, platform, SUPPLY);
 
-        // Desplegar USDC mock.
+        // 2. Inicializar el Mock USDC
         usdc = new MockUSDC();
 
-        // Desplegar distributor vinculando la dirección valida de usdc
-        vm.prank(platform);
+        // 3. Desplegar el distribuidor pasando los parámetros correctos
         distributor = new DividendDistributor(address(token), address(usdc), platform);
 
-        // Vincular el distribuidor al token
+        // 4. Darle el rol de DEPOSITOR a la plataforma para que pueda meter dividendos en los tests
         vm.prank(platform);
-        token.setDistributor(address(distributor));
-
-        // Emitir el supply inicial a la plataforma
-        vm.prank(platform);
-        token.mint(platform, SUPPLY);
-
-        // Fondear la plataforma con USDC y darle el approve al distribuidor
-        usdc.mint(platform, 100_000 * 1e6);
-
-        vm.prank(platform);
-        usdc.approve(address(distributor), type(uint256).max);
+        // El contrato de test es el admin por haber hecho el "new", así que le da el rol a platform directamente:
+        distributor.grantRole(distributor.DEPOSITOR_ROLE(), platform);
     }
 
     // ── Deposit ──────────────────────────────────────────────
@@ -79,7 +69,7 @@ contract DividendDistributorTest is Test {
 
     function test_DepositZeroReverts() public {
         vm.prank(platform);
-        vm.expectRevert("DD: amount = 0");
+        vm.expectRevert("DD: zero amount");
         distributor.depositDividends(0);
     }
 
@@ -221,16 +211,17 @@ contract DividendDistributorTest is Test {
     // ── Stress mods and reqs ─────────────────────────────────────────
 
     function test_DistributorConstructor_RevertIf_ZeroAddress() public {
-        vm.startPrank(platform);
+        // Caso 1: Falla por Token en cero
         vm.expectRevert("DD: zero token");
         new DividendDistributor(address(0), address(usdc), platform);
 
+        // Caso 2: Falla por USDC en cero
         vm.expectRevert("DD: zero usdc");
         new DividendDistributor(address(token), address(0), platform);
 
+        // Caso 3: Falla por Admin en cero
         vm.expectRevert("DD: zero admin");
         new DividendDistributor(address(token), address(usdc), address(0));
-        vm.stopPrank();
     }
 
     function test_DepositDividends_RevertIf_AmountZero() public {
@@ -243,7 +234,8 @@ contract DividendDistributorTest is Test {
     // Revert corregido: Crea un LinkenToken con total supply en cero y valida la reversión
     function test_DepositDividends_RevertIf_NoSupply() public {
         vm.startPrank(platform);
-        LinkenToken emptyToken = new LinkenToken(platform);
+        LinkenToken emptyToken = new LinkenToken(platform, platform, 1e18);
+        emptyToken.burn(1e18); // quema todo → supply = 0
         DividendDistributor newDistributor = new DividendDistributor(address(emptyToken), address(usdc), platform);
 
         usdc.mint(platform, 100 * 1e6);
@@ -264,7 +256,7 @@ contract DividendDistributorTest is Test {
     function test_OnTokenTransfer_RevertIf_NotProjectToken() public {
         vm.prank(alice);
         // Intento de llamada externa maliciosa
-        vm.expectRevert("DD: not project token");
+        vm.expectRevert("DD: not linken token");
         distributor.onTokenTransfer(alice, bob, 100e18);
     }
 

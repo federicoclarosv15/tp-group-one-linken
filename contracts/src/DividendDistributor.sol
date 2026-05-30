@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// contracts/src/DividenDistributor.sol
+// contracts/src/DividendDistributor.sol
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -118,7 +118,7 @@ contract DividendDistributor is AccessControl, Pausable, ReentrancyGuard, IDivid
      *      Solo puede ser llamado por el LinkenToken asociado.
      */
     function onTokenTransfer(address from, address to, uint256 amount) external {
-        require(msg.sender == address(token), "DD: not project token");
+        require(msg.sender == address(token), "DD: not linken token");
 
         int256 delta = int256(magnifiedDividendPerShare * amount);
         magnifiedDividendCorrections[from] += delta;

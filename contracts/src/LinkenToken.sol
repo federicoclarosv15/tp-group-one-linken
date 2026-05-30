@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-// contracts/src/LinkenToken.sol
-
 /**
  * @title Linken (LKN)
- * @notice ERC-20 token para plataforma de tokenización de energías renovables.
+ * @notice ERC-20 de participación fraccionada en infraestructura de generación
+ *         de energía renovable (parque solar / eólico).
+ *
+ * Modelo TGE (Token Generation Event):
+ * - El supply se define en el constructor y se emite UNA SOLA VEZ al emisor.
+ * - No existe función mint() — cero inflación post-TGE.
+ * - Ejemplo: parque 5MW → 200.000 LKN emitidos al SPE dueño del parque.
  *
  * Decisiones de diseño:
- * - OpenZeppelin v5: última versión estable con soporte activo, mejoras de gas
- *   en ERC-20, y compatibilidad nativa con Solidity 0.8.24.
- * - ReentrancyGuard: protege mint/burn contra ataques de reentrada.
+ * - OpenZeppelin v5: última versión estable, compatibilidad nativa con 0.8.24.
+ * - ReentrancyGuard: protege burn contra ataques de reentrada.
  * - Pausable: circuit-breaker de emergencia para detener transferencias.
- * - Patrón CEI (Checks-Effects-Interactions): validaciones primero,
- *   cambios de estado después, llamadas externas al final.
- * - Sin loops: no hay iteraciones sobre arrays ni envío de ETH en loops.
- * - Sin unchecked: Solidity 0.8+ previene overflow por defecto;
- *   no se usa unchecked salvo donde se justifica explícitamente.
+ * - AccessControl: roles separados para pause y administración.
+ * - Patrón CEI: validaciones → efectos → interacciones externas.
+ * - Sin loops ni envío de ETH.
+ * - Sin unchecked salvo donde se justifica explícitamente.
  */
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -27,73 +29,48 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {IDividendDistributor} from "./interfaces/IDividendDistributor.sol";
 
 contract LinkenToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, ReentrancyGuard {
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+
+    /// @notice Supply total fijo — emitido en el TGE, nunca aumenta.
+    uint256 public immutable initialSupply;
 
     IDividendDistributor public dividendDistributor;
 
-    // =========================================================
-    // Eventos
-    // =========================================================
-    event Minted(address indexed to, uint256 amount);
+    // ── Eventos ───────────────────────────────────────────────
     event Burned(address indexed from, uint256 amount);
     event DistributorSet(address indexed distributor);
 
-    // =========================================================
-    // Constructor
-    // =========================================================
-    constructor(address platformAdmin) ERC20("Linken", "LKN") {
+    // ── Constructor — TGE ─────────────────────────────────────
+
+    /**
+     * @param platformAdmin  Recibe DEFAULT_ADMIN_ROLE y PAUSER_ROLE (plataforma).
+     * @param tgeRecipient   Recibe el supply completo en el TGE (SPE / emisor).
+     * @param tgeSupply      Cantidad de tokens a emitir. Fijo para siempre.
+     *                       Ejemplo parque 5MW: 200_000 * 1e18
+     */
+    constructor(address platformAdmin, address tgeRecipient, uint256 tgeSupply) ERC20("Linken", "LKN") {
         require(platformAdmin != address(0), "LKN: zero admin");
+        require(tgeRecipient != address(0), "LKN: zero recipient");
+        require(tgeSupply > 0, "LKN: zero supply");
+
+        initialSupply = tgeSupply;
+
         _grantRole(DEFAULT_ADMIN_ROLE, platformAdmin);
-        _grantRole(MINTER_ROLE, platformAdmin);
         _grantRole(PAUSER_ROLE, platformAdmin);
+
+        // TGE — emisión única al SPE dueño del parque
+        _mint(tgeRecipient, tgeSupply);
     }
 
-    // =========================================================
-    // Funciones admin (solo owner)
-    // =========================================================
-
-    /**
-     * @notice Mintea `amount` tokens a `to`.
-     * @dev ReentrancyGuard + CEI: checks → effects (_mint) → no interactions externas.
-     */
-    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant whenNotPaused {
-        require(to != address(0), "LKN: mint to zero");
-        require(amount > 0, "LKN: amount = 0");
-        _mint(to, amount);
-        emit Minted(to, amount);
-    }
-
-    /**
-     * @notice Pausa todas las transferencias (circuit-breaker).
-     */
-    function pause() external onlyRole(PAUSER_ROLE) {
-        _pause();
-    }
-
-    /**
-     * @notice Reanuda las transferencias.
-     */
-    function unpause() external onlyRole(PAUSER_ROLE) {
-        _unpause();
-    }
-
-    // =========================================================
-    // Burn público (cualquier holder puede quemar sus tokens)
-    // =========================================================
+    // ── Burn público (cualquier holder puede quemar sus tokens) ──
 
     /**
      * @notice Quema `amount` tokens propios.
-     * @dev ERC20Burnable.burn ya implementa CEI internamente.
-     *      ReentrancyGuard agrega una capa extra.
+     * @dev Sink de la economía del token — reduce supply circulante.
      */
     function burn(uint256 amount) public override nonReentrant whenNotPaused {
-        // Checks
         require(amount > 0, "LKN: amount must be > 0");
-
-        // Effects + (no interactions externas)
         super.burn(amount);
-
         emit Burned(msg.sender, amount);
     }
 
@@ -106,14 +83,30 @@ contract LinkenToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl, Reen
         emit Burned(account, amount);
     }
 
+    // ── Circuit-breaker ───────────────────────────────────────
+
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+    // ── Distributor ───────────────────────────────────────────
+
     function setDistributor(address newDistributor) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(newDistributor != address(0), "LKN: zero distributor");
         dividendDistributor = IDividendDistributor(newDistributor);
         emit DistributorSet(newDistributor);
     }
 
+    // ── Override requerido por herencia múltiple ──────────────
+
     function _update(address from, address to, uint256 value) internal virtual override(ERC20, ERC20Pausable) {
         super._update(from, to, value);
+        // Notificar al distributor en transferencias entre holders
+        // (no en mint: from == 0, ni en burn: to == 0)
         if (from != address(0) && to != address(0)) {
             if (address(dividendDistributor) != address(0)) {
                 dividendDistributor.onTokenTransfer(from, to, value);

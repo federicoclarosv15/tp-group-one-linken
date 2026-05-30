@@ -22,6 +22,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
  */
 contract ProjectRegistry is AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant CREATOR_ROLE = keccak256("CREATOR_ROLE");
+    bytes32 public constant OFFERING_ROLE = keccak256("OFFERING_ROLE");
 
     enum Stage {
         FUNDING,
@@ -91,6 +92,18 @@ contract ProjectRegistry is AccessControl, Pausable, ReentrancyGuard {
         require(hasRole(DEFAULT_ADMIN_ROLE, msg.sender) || p.owner == msg.sender, "PR: not authorized");
         p.stage = newStage;
         emit StageChanged(projectId, newStage);
+    }
+
+    /**
+     * @notice Activa el proyecto automáticamente al finalizar una ronda exitosa.
+     * @dev Solo puede ser llamado por un OfferingContract autorizado (OFFERING_ROLE).
+     */
+    function activateProject(uint256 projectId) external onlyRole(OFFERING_ROLE) {
+        Project storage p = projects[projectId];
+        require(p.exists, "PR: not found");
+        require(p.stage == Stage.FUNDING, "PR: not in funding");
+        p.stage = Stage.ACTIVE;
+        emit StageChanged(projectId, Stage.ACTIVE);
     }
 
     // ── Circuit-breaker ──────────────────────────────────────

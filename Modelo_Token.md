@@ -120,6 +120,8 @@ Antes de escribir una sola línea de Solidity:
 4. ¿Qué quema o bloquea tokens? (Sin sinks, inflación → muerte.)
 5. Si mañana hay 100x más usuarios, ¿el modelo aguanta? (¿El gas explota? ¿Los oráculos colapsan? ¿El fideicomiso da abasto?)
 
+Respuestas:
+
 1. Un token representa una participacion proporcional en un parque de generacion de energia y en los ingresos por venta de energia en la red electrica.
 2. Sale de la venta de energia electrica a las compañias de energia.
 3. Un token le permite al inversor hacer un voto ponderado en la toma de decisiones sobre el parque, como realizar inversiones para poner mas paneles solares (por ejemplo). Entonces, cuanto mas tokens tenga, mayor es la probabilidad que su decision se lleve a cabo.
@@ -239,7 +241,7 @@ A tener en cuenta que persiste un punto de confianza: el medidor IoT físico. Si
 
 El modelo le ofrece al inversor dos productos distintos en función de su tolerancia al riesgo:
 | Perfil | Estado del parque |Precio del token |Yield esperado |Riesgo|
------------------------------------------------------------------------
+|--------|-------------------|-----------------|---------------|------|
 | Inicial | En construcción (12-18 meses para operar) | Más barato (descuento por riesgo) | Más alto cuando entra en operación | Demora, sobrecostos, no llegar a generar
 | Consolidado | Operando con track record (12+ meses) | Más caro (riesgo descontado) | Más predecible | Climático, regulatorio |
 
@@ -309,6 +311,7 @@ Sin esos 3 elementos, $GREEN es un token verde de marketing. Con ellos, es un ac
 
 ## Riesgos específicos de Energía Renovable
 |Riesgo | Por qué importa | Mitigación |
+|-------|-----------------|------------|
 | Generación variable | Días nublados / sin viento → menos kWh → menos dividendo. | Comunicar variabilidad esperada (ej: factor de capacidad 25-30% típico). |
 | Cambio en tarifa PPA | Si el regulador cambia la tarifa, el ingreso cambia. | PPA a largo plazo (10-20 años) con tarifa fija o indexada a USD. |
 | Manipulación del medidor IoT | Alguien con acceso físico podría falsear kWh. | Medidor certificado + múltiples fuentes (medidor + app CAMMESA + auditor). |
@@ -337,7 +340,8 @@ Regla: si no podés responder estas 9 preguntas, no escribas todavía un solo co
 Objetivo: demostrar el flujo end-to-end con un oráculo IoT mockeado que dispare distribución automática. El twist único del proyecto va en el PoC.
 
 ### Stack técnico recomendado
-| Capa | Tecnología | Por qué
+| Capa | Tecnología | Por qué |
+|------|------------|---------|
 | Smart contracts | Solidity 0.8.x + OpenZeppelin 5.x | OZ trae ERC-20 + Ownable + AccessControl auditados |
 | Framework de desarrollo | Hardhat + Chainlink Hardhat Plugin | Hardhat se integra con Chainlink local node |
 | Red de prueba | Base Sepolia | Chainlink Functions y Data Feeds disponibles en Base Sepolia; EVM idéntica a Ethereum |
@@ -483,6 +487,7 @@ Objetivo: entender qué falta entre el PoC y un parque tokenizado operando con p
 
 ### 11.1 — Stack / infraestructura productiva
 | Componente | PoC | Producción | Por qué cambia |
+|------------|-----|------------|----------------|
 | Red | Base Sepolia | Base mainnet (L2 Ethereum) | Gas mínimo + finalidad rápida + EVM compatible |
 | Oráculo de kWh | Wallet mock con role | Chainlink Functions + Adapter custom al medidor | Verificable, descentralizado
 | Medidor IoT | — | Medidor inteligente certificado IRAM (Schneider PowerLogic, Itron, Landis+Gyr) | Sin certificación, el oráculo no es confiable |
